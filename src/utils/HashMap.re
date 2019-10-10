@@ -13,6 +13,15 @@ let get = (key: string, map) => {
   _isEmpty(value) ? None : Some(value);
 };
 
+/* TODO move to NullService */
+let _isInMap = value => value !== Obj.magic(Js.Nullable.undefined);
+
+let fastGet = (key, map) => {
+  let value = unsafeGet(key, map);
+
+  (_isInMap(value), value);
+};
+
 /* let length = (map: Js.Dict.t(Js.Nullable.t('a))) =>
      Js.Array.length(Js.Dict.entries(map));
 
@@ -29,9 +38,6 @@ let entries =
     : array((Js.Dict.key, 'a)) =>
   map |> Js.Dict.entries |> HashMapType.entriesNullableToEntriesNotNullable;
 
-/* TODO move to NullService */
-let _isInMap = value => value !== Js.Nullable.undefined;
-
 let getValidEntries =
     (map: Js.Dict.t(Js.Nullable.t('a))): array((Js.Dict.key, 'a)) =>
   map
@@ -41,10 +47,10 @@ let getValidEntries =
   |> HashMapType.entriesNullableToEntriesNotNullable;
 
 /* let getValidValues = map =>
-  map
-  |> Js.Dict.values
-  |> Js.Array.filter(value => value |> _isInMap)
-  |> HashMapType.arrayNullableToArrayNotNullable; */
+   map
+   |> Js.Dict.values
+   |> Js.Array.filter(value => value |> _isInMap)
+   |> HashMapType.arrayNullableToArrayNotNullable; */
 
 let _mutableSet = (key: string, value, map) => {
   Js.Dict.set(map, key, value);

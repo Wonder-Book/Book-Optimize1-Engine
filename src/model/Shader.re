@@ -116,6 +116,116 @@ module GLSLLocation = {
   };
 };
 
+module GLSLSender = {
+  let createGLSLSenderData = () => {
+    uniformCacheMap: ImmutableHashMap.createEmpty(),
+  };
+
+  let _fastGetCache = (shaderCacheMap, name: string) =>
+    shaderCacheMap |> ImmutableHashMap.fastGet(name);
+
+  let _queryIsNotCacheWithCache = (cache, x, y, z) => {
+    let isNotCached = ref(false);
+    if (Array.unsafe_get(cache, 0) !== x) {
+      Array.unsafe_set(cache, 0, x);
+      isNotCached := true;
+    };
+    if (Array.unsafe_get(cache, 1) !== y) {
+      Array.unsafe_set(cache, 1, y);
+      isNotCached := true;
+    };
+    if (Array.unsafe_get(cache, 2) !== z) {
+      Array.unsafe_set(cache, 2, z);
+      isNotCached := true;
+    };
+    isNotCached^;
+  };
+
+  let _setCache = (shaderCacheMap, name: string, record) =>
+    shaderCacheMap |> ImmutableHashMap.set(name, record);
+
+  let _isNotCacheVector3AndSetCache =
+      (shaderCacheMap, name: string, (x: float, y: float, z: float)) => {
+    let (has, cache) = _fastGetCache(shaderCacheMap, name);
+
+    has ?
+      (shaderCacheMap, _queryIsNotCacheWithCache(cache, x, y, z)) :
+      (
+        _setCache(shaderCacheMap, name, [|x, y, z|]),
+        true,
+        /* _setCache(shaderCacheMap, name, [|x, y, z|]) |> ignore;
+           true; */
+      );
+  };
+
+  let sendFloat3 =
+      (
+        gl,
+        /* shaderCacheMap:  shaderCacheMap, */
+        (name: string, pos: GlType.uniformLocation),
+        valueArr,
+        /* state */
+        shaderCacheMap,
+      ) => {
+    /* WonderLog.Contract.requireCheck(
+         () =>
+           WonderLog.(
+             Contract.(
+               Operators.(
+                 test(
+                   Log.buildAssertMessage(
+                     ~expect={j|valueArr.length === 3|j},
+                     ~actual={j|not|j},
+                   ),
+                   () =>
+                   valueArr |> Js.Array.length == 3
+                 )
+               )
+             )
+           ),
+         IsDebugMainService.getIsDebug(StateDataMain.stateData),
+       ); */
+
+    let x = valueArr[0];
+    let y = valueArr[1];
+    let z = valueArr[2];
+
+    let (shaderCacheMap, isNotCache) =
+      _isNotCacheVector3AndSetCache(shaderCacheMap, name, (x, y, z));
+
+    if (isNotCache) {
+      /* WonderLog.Log.log(("send float3: ", name, (x, y, z))) |> ignore; */
+      Gl.uniform3f(
+        pos,
+        x,
+        y,
+        z,
+        gl,
+      );
+    } else {
+      ();
+    };
+
+    shaderCacheMap;
+  };
+
+  let getOrCreateShaderCacheMap = (shaderName, uniformCacheMap) =>
+    switch (ImmutableHashMap.get(shaderName, uniformCacheMap)) {
+    | None => ImmutableHashMap.createEmpty()
+    | Some(map) => map
+    };
+
+  let getUniformCacheMap = state => state.glslSenderData.uniformCacheMap;
+
+  let setUniformCacheMap = (uniformCacheMap, state) => {
+    ...state,
+    glslSenderData: {
+      ...state.glslSenderData,
+      uniformCacheMap,
+    },
+  };
+};
+
 let _compileShader = (gl, glslSource: string, shader) => {
   Gl.shaderSource(shader, glslSource, gl);
   Gl.compileShader(shader, gl);

@@ -70,11 +70,18 @@ type glslLocationData = {
   uniformLocationMap,
 };
 
+type shaderCacheMap = ImmutableHashMap.t2(fieldName, array(float));
+
+type glslSenderData = {
+  uniformCacheMap: ImmutableHashMap.t2(shaderName, shaderCacheMap),
+};
+
 type state = {
   viewData,
   deviceManagerData,
   glslData,
   glslLocationData,
+  glslSenderData,
   programData,
   cameraData,
   allGameObjectData,

@@ -16,6 +16,8 @@ let get = HashMap.get;
 
 let unsafeGet = HashMap.unsafeGet;
 
+let fastGet = HashMap.fastGet;
+
 /* let length = HashMap.length;
 
    let fromList = HashMap.fromList;

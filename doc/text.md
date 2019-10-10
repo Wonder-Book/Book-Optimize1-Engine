@@ -29,7 +29,7 @@ why set "isDebug" to state data instead of state?
 ## optimize loop
 
 
-cache location:
+- cache location
 ////utils: add sparse map
 
 
@@ -39,17 +39,43 @@ cache location:
 
 
 
-set camera data only once
+- set camera data only once
 
 ////(split uniform data to camera data, model data)
 
 
 
-cache uniform data
+- cache uniform data
+not all uniform data need cache
+(e.g. matrix data not cache; array number(int/float) data can cache)
 
 
 
-store send func when init shader:
+/*
+need test difference perf!!!
+
+add MutableHashMap for performance:
+uniformCacheMap, shaderCacheMap is MutableHashMap
+
+*/
+
+
+
+
+
+
+
+- extract shaderIndex
+add SparseMap
+
+
+
+
+
+
+
+
+- store send func when init shader
 change glsl->2: add "u_alpha"
 need extract glsl sender data!
 
@@ -68,9 +94,13 @@ extract render state, sub state?
 
 
 
-cache use program
 
 
-use vao
 
-just last vao, uniform data
+
+- cache use program
+
+
+- use vao(extension)
+
+judge last vao
