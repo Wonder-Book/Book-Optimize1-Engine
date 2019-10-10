@@ -1,9 +1,12 @@
-let initAll = (contextParam, state) =>
-  state
-  |> DeviceManager.setGl(
-       Gl.getWebgl1Context(View.unsafeGetCanvas(state), contextParam),
-     )
-  |> Shader.init;
+let initAll = (contextParam, state) => {
+  let state =
+    state
+    |> DeviceManager.setGl(
+         Gl.getWebgl1Context(View.unsafeGetCanvas(state), contextParam),
+       );
+
+  state |> GPUDetect.detect(DeviceManager.unsafeGetGl(state)) |> Shader.init;
+};
 
 let loopBody = state => {
   let gl = DeviceManager.unsafeGetGl(state);

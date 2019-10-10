@@ -31,26 +31,32 @@ module Geometry = {
   let createGeometryDataWithGeometryPoints = (vertices, indices) => {
     vertices,
     indices,
-    vertexBuffer: None,
-    indexBuffer: None,
+    vao: None,
   };
 
   /* let getVertexBuffer = (geometryData) => geometryData.vertexBuffer; */
 
-  let getBuffers = ({vertexBuffer, indexBuffer}) => (
-    vertexBuffer,
-    indexBuffer,
-  );
+  /* let getBuffers = ({vertexBuffer, indexBuffer}) => (
+       vertexBuffer,
+       indexBuffer,
+     );
 
-  let unsafeGetBuffers = ({vertexBuffer, indexBuffer}) => (
-    vertexBuffer |> Option.unsafeGet,
-    indexBuffer |> Option.unsafeGet,
-  );
+     let unsafeGetBuffers = ({vertexBuffer, indexBuffer}) => (
+       vertexBuffer |> Option.unsafeGet,
+       indexBuffer |> Option.unsafeGet,
+     );
 
-  let setBufferts = ((vertexBuffer, indexBuffer), geometryData) => {
+     let setBufferts = ((vertexBuffer, indexBuffer), geometryData) => {
+       ...geometryData,
+       vertexBuffer: Some(vertexBuffer),
+       indexBuffer: Some(indexBuffer),
+     }; */
+
+  let unsafeGetVAO = ({vao}: geometryData) => vao |> Option.unsafeGet;
+
+  let setVAO = (vao: GlType.vao, geometryData: geometryData) => {
     ...geometryData,
-    vertexBuffer: Some(vertexBuffer),
-    indexBuffer: Some(indexBuffer),
+    vao: Some(vao),
   };
 
   /* let getIndexBuffer = (geometryData) => geometryData.indexBuffer; */

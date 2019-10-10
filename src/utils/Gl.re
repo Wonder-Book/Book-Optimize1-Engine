@@ -2,7 +2,6 @@ open Js.Typed_array;
 
 open GlType;
 
-
 [@bs.send]
 external getWebgl1Context:
   ('canvas, [@bs.as "webgl"] _, contextConfigJsObj) => webgl1Context =
@@ -144,3 +143,6 @@ external getDepthBufferBit: webgl1Context => int = "DEPTH_BUFFER_BIT";
 [@bs.send.pipe: webgl1Context] external cullFace: int => unit = "";
 
 [@bs.get] external getBack: webgl1Context => int = "BACK";
+
+[@bs.send.pipe: webgl1Context]
+external getExtension: string => Js.Nullable.t(extension) = "";

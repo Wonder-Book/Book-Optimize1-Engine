@@ -2,7 +2,18 @@ open DataType;
 
 open RenderType;
 
-let _createVBOs = ((vertices, indices), gl) => {
+let _createVAOs =
+    (
+      (vertices, indices),
+      shaderName,
+      gl,
+      vaoExt: GPUDetectType.vaoExt,
+      state,
+    ) => {
+  let vao = vaoExt##createVertexArrayOES();
+
+  vaoExt##bindVertexArrayOES(. Js.Nullable.return(vao));
+
   let vertexBuffer = Gl.createBuffer(gl);
 
   Gl.bindBuffer(Gl.getArrayBuffer(gl), vertexBuffer, gl);
@@ -13,6 +24,23 @@ let _createVBOs = ((vertices, indices), gl) => {
     Gl.getStaticDraw(gl),
     gl,
   );
+
+  let positionLocation =
+    Shader.GLSLLocation.unsafeGetAttribLocation(
+      shaderName,
+      "a_position",
+      state,
+    );
+  Gl.vertexAttribPointer(
+    positionLocation,
+    3,
+    Gl.getFloat(gl),
+    false,
+    0,
+    0,
+    gl,
+  );
+  Gl.enableVertexAttribArray(positionLocation, gl);
 
   let indexBuffer = Gl.createBuffer(gl);
 
@@ -25,27 +53,38 @@ let _createVBOs = ((vertices, indices), gl) => {
     gl,
   );
 
-  (vertexBuffer, indexBuffer);
+  vaoExt##bindVertexArrayOES(. Js.Nullable.null);
+
+  vao;
 };
 
-let _getOrCreateVBOs = ({vertices, indices, vertexBuffer, indexBuffer}, gl) =>
-  switch (vertexBuffer, indexBuffer) {
-  | (None, None) => _createVBOs((vertices, indices), gl)
-  | _ => (vertexBuffer |> Option.unsafeGet, indexBuffer |> Option.unsafeGet)
+let _getOrCreateVAOs = ({vertices, indices, vao}, shaderName, gl, vaoExt, state) =>
+  switch (vao) {
+  | None => _createVAOs((vertices, indices), shaderName, gl, vaoExt, state)
+  | _ => vao |> Option.unsafeGet
   };
 
-let _initVBOs = (gl, state) =>
+let _initVAOs = (gl, state) => {
+  let vaoExt = GPUDetect.unsafeGetVAOExt(state);
+
   GameObject.getGameObjectDataArr(state)
   |> Js.Array.map(
        ({transformData, geometryData, materialData} as gameObjectData) =>
        {
          ...gameObjectData,
          geometryData:
-           _getOrCreateVBOs(geometryData, gl)
-           |> GameObject.Geometry.setBufferts(_, geometryData),
+           _getOrCreateVAOs(
+             geometryData,
+             GameObject.Material.getShaderName(materialData),
+             gl,
+             vaoExt,
+             state
+           )
+           |> GameObject.Geometry.setVAO(_, geometryData),
        }
      )
   |> GameObject.setGameObjectDataArr(_, state);
+};
 
 let _getProgram = ({shaderName}: materialData, state) =>
   Shader.Program.unsafeGetProgram(shaderName, state);
@@ -53,44 +92,23 @@ let _getProgram = ({shaderName}: materialData, state) =>
 let _changeGameObjectDataArrToRenderDataArr = (gameObjectDataArr, gl, state) =>
   gameObjectDataArr
   |> Js.Array.map(
-       ({transformData, geometryData, materialData} as gameObjectData) => {
-       let (vertexBuffer, indexBuffer) =
-         GameObject.Geometry.unsafeGetBuffers(geometryData);
-
+       ({transformData, geometryData, materialData} as gameObjectData) =>
        {
          mMatrix: GameObject.Transform.getMMatrix(transformData),
-         vertexBuffer,
-         indexBuffer,
+         vao: GameObject.Geometry.unsafeGetVAO(geometryData),
          indexCount:
            GameObject.Geometry.getIndices(geometryData)
            |> Js.Typed_array.Uint16Array.length,
          color: GameObject.Material.getColor(materialData),
          program: _getProgram(materialData, state),
          shaderName: GameObject.Material.getShaderName(materialData),
-       };
-     });
+       }
+     );
 
-let _sendAttributeData = (vertexBuffer, program, shaderName, gl, state) => {
-  let positionLocation =
-    Shader.GLSLLocation.unsafeGetAttribLocation(
-      shaderName,
-      "a_position",
-      state,
-    );
-
-  Gl.bindBuffer(Gl.getArrayBuffer(gl), vertexBuffer, gl);
-
-  Gl.vertexAttribPointer(
-    positionLocation,
-    3,
-    Gl.getFloat(gl),
-    false,
-    0,
-    0,
-    gl,
+let _sendAttributeData = (vao, state) =>
+  GPUDetect.unsafeGetVAOExt(state)##bindVertexArrayOES(
+    Js.Nullable.return(vao),
   );
-  Gl.enableVertexAttribArray(positionLocation, gl);
-};
 
 let _sendCameraUniformData =
     ((vMatrix, pMatrix), program, shaderName, gl, state) => {
@@ -164,14 +182,14 @@ let _sendUniformShaderData = (gl, state) => {
            state,
          );
 
-         state
+         state;
        },
        state,
      );
 };
 
 let render = (gl, state) => {
-  let state = _initVBOs(gl, state);
+  let state = _initVAOs(gl, state);
 
   let state = _sendUniformShaderData(gl, state);
 
@@ -181,21 +199,10 @@ let render = (gl, state) => {
     state,
   )
   |> ArrayUtils.reduceOneParam(
-       (.
-         state,
-         {
-           mMatrix,
-           vertexBuffer,
-           indexBuffer,
-           indexCount,
-           color,
-           program,
-           shaderName,
-         },
-       ) => {
+       (. state, {mMatrix, vao, indexCount, color, program, shaderName}) => {
          let state = Shader.Program.use(gl, program, state);
 
-         _sendAttributeData(vertexBuffer, program, shaderName, gl, state);
+         /* _sendAttributeData(vertexBuffer, program, shaderName, gl, state); */
 
          let state =
            state
@@ -206,7 +213,8 @@ let render = (gl, state) => {
                 gl,
               );
 
-         Gl.bindBuffer(Gl.getElementArrayBuffer(gl), indexBuffer, gl);
+         _sendAttributeData(vao, state);
+         /* Gl.bindBuffer(Gl.getElementArrayBuffer(gl), indexBuffer, gl); */
 
          Gl.drawElements(
            Gl.getTriangles(gl),

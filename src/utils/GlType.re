@@ -6,9 +6,13 @@ type shader;
 
 type buffer;
 
+type vao;
+
 type attributeLocation = int;
 
 type uniformLocation;
+
+type extension;
 
 type precisionFormat = {. "precision": int};
 

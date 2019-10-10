@@ -26,8 +26,9 @@ type programData = {
 type geometryData = {
   vertices: Js.Typed_array.Float32Array.t,
   indices: Js.Typed_array.Uint16Array.t,
-  vertexBuffer: option(GlType.buffer),
-  indexBuffer: option(GlType.buffer),
+  /* vertexBuffer: option(GlType.buffer),
+  indexBuffer: option(GlType.buffer), */
+  vao: option(GlType.vao)
 };
 
 type transformData = {mMatrix: MatrixType.matrix};
@@ -77,9 +78,12 @@ type glslSenderData = {
   uniformCacheMap: ImmutableHashMap.t2(shaderName, shaderCacheMap),
 };
 
+type gpuDetectData = {vao: option(GPUDetectType.vaoExt)};
+
 type state = {
   viewData,
   deviceManagerData,
+  gpuDetectData,
   glslData,
   glslLocationData,
   glslSenderData,

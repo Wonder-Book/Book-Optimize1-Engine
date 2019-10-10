@@ -86,4 +86,8 @@ spend more time for gc
 
 - use vao(extension)
 
+get vao extension:
+directly unsafeGet, because most devices support it!
+
+
 judge last vao
