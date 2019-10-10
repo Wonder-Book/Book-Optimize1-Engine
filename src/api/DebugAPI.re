@@ -1,0 +1,1 @@
+let setIsDebug = isDebug => Debug.setIsDebug(Data.getStateData(), isDebug);

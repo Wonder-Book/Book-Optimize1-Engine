@@ -11,13 +11,27 @@ memory
 # optimize
 
 
+## optimize initAll
+
+optimize:
+get shader info only when debug
+
+
+why set "isDebug" to state data instead of state?
+(and why mutable?)
+
+
+
+
+
+## optimize loop
+
+
 cache location
 
-store send func when init shader
 
 
 
-extract shader index
 
 
 cache uniform data

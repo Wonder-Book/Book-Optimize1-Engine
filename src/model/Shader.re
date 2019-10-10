@@ -48,22 +48,22 @@ module Program = {
     );
 };
 
-
 let _compileShader = (gl, glslSource: string, shader) => {
   Gl.shaderSource(shader, glslSource, gl);
   Gl.compileShader(shader, gl);
 
-  /* TODO optimize */
-  Gl.getShaderParameter(shader, Gl.getCompileStatus(gl), gl) === false ?
-    {
-      let message = Gl.getShaderInfoLog(shader, gl);
+  Debug.getIsDebug(Data.getStateData()) ?
+    Gl.getShaderParameter(shader, Gl.getCompileStatus(gl), gl) === false ?
+      {
+        let message = Gl.getShaderInfoLog(shader, gl);
 
-      Error.error(
-        {j|shader info log: $message
+        Error.error(
+          {j|shader info log: $message
         glsl source: $glslSource
         |j},
-      );
-    } :
+        );
+      } :
+      () :
     ();
 
   shader;
@@ -72,13 +72,14 @@ let _compileShader = (gl, glslSource: string, shader) => {
 let _linkProgram = (program, gl) => {
   Gl.linkProgram(program, gl);
 
-  /* TODO optimize */
-  Gl.getProgramParameter(program, Gl.getLinkStatus(gl), gl) === false ?
-    {
-      let message = Gl.getProgramInfoLog(program, gl);
+  Debug.getIsDebug(Data.getStateData()) ?
+    Gl.getProgramParameter(program, Gl.getLinkStatus(gl), gl) === false ?
+      {
+        let message = Gl.getProgramInfoLog(program, gl);
 
-      Error.error({j|link program error: $message|j});
-    } :
+        Error.error({j|link program error: $message|j});
+      } :
+      () :
     ();
 };
 

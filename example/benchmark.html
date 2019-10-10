@@ -11,7 +11,8 @@
         Please use a browser that supports "canvas"
     </canvas>
 
-    <script src="./wd_old.js"></script>
+    <!-- <script src="./wd_old.js"></script> -->
+    <script src="../dist/wd.js"></script>
     <script>
         var vs1 = `
   precision mediump float;
@@ -84,6 +85,8 @@
             ]
         }
 
+
+        wd.setIsDebug(false);
 
         var state = wd.createState();
 

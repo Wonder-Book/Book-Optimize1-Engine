@@ -6,6 +6,8 @@ let unsafeGetState = DataAPI.unsafeGetState;
 
 let createState = DataAPI.createState;
 
+let setIsDebug = DebugAPI.setIsDebug;
+
 let setClearColor = DeviceManagerAPI.setClearColor;
 
 let loop = DirectorAPI.loop;

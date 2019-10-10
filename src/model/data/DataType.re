@@ -15,7 +15,6 @@ type programData = {
   programMap: ImmutableHashMap.t2(shaderName, GlType.program),
 };
 
-
 type geometryData = {
   vertices: Js.Typed_array.Float32Array.t,
   indices: Js.Typed_array.Uint16Array.t,
@@ -56,4 +55,7 @@ type state = {
   allGameObjectData,
 };
 
-type stateData = {mutable state: option(state)};
+type stateData = {
+  mutable state: option(state),
+  mutable isDebug: bool,
+};
