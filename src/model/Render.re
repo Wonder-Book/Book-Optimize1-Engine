@@ -58,7 +58,8 @@ let _createVAOs =
   vao;
 };
 
-let _getOrCreateVAOs = ({vertices, indices, vao}, shaderName, gl, vaoExt, state) =>
+let _getOrCreateVAOs =
+    ({vertices, indices, vao}, shaderName, gl, vaoExt, state) =>
   switch (vao) {
   | None => _createVAOs((vertices, indices), shaderName, gl, vaoExt, state)
   | _ => vao |> Option.unsafeGet
@@ -78,7 +79,7 @@ let _initVAOs = (gl, state) => {
              GameObject.Material.getShaderName(materialData),
              gl,
              vaoExt,
-             state
+             state,
            )
            |> GameObject.Geometry.setVAO(_, geometryData),
        }
@@ -106,9 +107,19 @@ let _changeGameObjectDataArrToRenderDataArr = (gameObjectDataArr, gl, state) =>
      );
 
 let _sendAttributeData = (vao, state) =>
-  GPUDetect.unsafeGetVAOExt(state)##bindVertexArrayOES(
-    Js.Nullable.return(vao),
-  );
+  switch (Shader.GLSLSender.getLastSendedVAO(state)) {
+  | Some(lastSendedVAO) when lastSendedVAO === vao => state
+  | lastSendedVAOpt =>
+    GPUDetect.unsafeGetVAOExt(state)##bindVertexArrayOES(
+      Js.Nullable.return(vao),
+    );
+
+    switch (lastSendedVAOpt) {
+    | Some(lastSendedVAO) =>
+      Shader.GLSLSender.setLastSendedVAO(lastSendedVAO, state)
+    | None => state
+    };
+  };
 
 let _sendCameraUniformData =
     ((vMatrix, pMatrix), program, shaderName, gl, state) => {
@@ -213,7 +224,7 @@ let render = (gl, state) => {
                 gl,
               );
 
-         _sendAttributeData(vao, state);
+         let state = _sendAttributeData(vao, state);
          /* Gl.bindBuffer(Gl.getElementArrayBuffer(gl), indexBuffer, gl); */
 
          Gl.drawElements(

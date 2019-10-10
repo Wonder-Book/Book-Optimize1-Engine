@@ -90,4 +90,6 @@ get vao extension:
 directly unsafeGet, because most devices support it!
 
 
-judge last vao
+judge last vao:
+not improve perf in benchmark!
+(because each gameObject->geometry->vao is different!!! should improve perf when there are share geometrys!)

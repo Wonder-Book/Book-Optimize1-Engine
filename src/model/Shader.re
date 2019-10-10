@@ -137,6 +137,7 @@ module GLSLLocation = {
 module GLSLSender = {
   let createGLSLSenderData = () => {
     uniformCacheMap: ImmutableHashMap.createEmpty(),
+    lastBindedVAO: None,
   };
 
   let _fastGetCache = (shaderCacheMap, name: string) =>
@@ -249,6 +250,16 @@ module GLSLSender = {
     getUniformCacheMap(state)
     |> ImmutableHashMap.set(shaderName, ImmutableHashMap.createEmpty())
     |> setUniformCacheMap(_, state);
+
+  let getLastSendedVAO = state => state.glslSenderData.lastBindedVAO;
+
+  let setLastSendedVAO = (lastBindedVAO, state) => {
+    ...state,
+    glslSenderData: {
+      ...state.glslSenderData,
+      lastBindedVAO: Some(lastBindedVAO),
+    },
+  };
 };
 
 let _compileShader = (gl, glslSource: string, shader) => {
