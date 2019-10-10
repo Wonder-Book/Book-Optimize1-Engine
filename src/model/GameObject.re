@@ -62,6 +62,8 @@ module Material = {
   let createMaterialData = (shaderName, color) => {shaderName, color};
 
   let getColor = ({color}) => color;
+
+  let getShaderName = ({shaderName}) => shaderName;
 };
 
 let getGameObjectDataArr = state => state.allGameObjectData.gameObjectDataArr;

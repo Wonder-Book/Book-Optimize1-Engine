@@ -5,4 +5,5 @@ type renderData = {
   indexCount: int,
   color: (float, float, float),
   program: GlType.program,
+  shaderName: DataType.shaderName,
 };

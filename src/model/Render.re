@@ -47,7 +47,7 @@ let _initVBOs = (gl, state) =>
      )
   |> GameObject.setGameObjectDataArr(_, state);
 
-let _getProgram = ({shaderName}, state) =>
+let _getProgram = ({shaderName}: materialData, state) =>
   Shader.Program.unsafeGetProgram(shaderName, state);
 
 let _changeGameObjectDataArrToRenderDataArr = (gameObjectDataArr, gl, state) =>
@@ -66,14 +66,17 @@ let _changeGameObjectDataArrToRenderDataArr = (gameObjectDataArr, gl, state) =>
            |> Js.Typed_array.Uint16Array.length,
          color: GameObject.Material.getColor(materialData),
          program: _getProgram(materialData, state),
+         shaderName: GameObject.Material.getShaderName(materialData),
        };
      });
 
-let _sendAttributeData = (vertexBuffer, program, gl) => {
-  let positionLocation = Gl.getAttribLocation(program, "a_position", gl);
-
-  positionLocation === (-1) ?
-    Error.error({j|Failed to get the storage location of a_position|j}) : ();
+let _sendAttributeData = (vertexBuffer, program, shaderName, gl, state) => {
+  let positionLocation =
+    Shader.GLSLLocation.unsafeGetAttribLocation(
+      shaderName,
+      "a_position",
+      state,
+    );
 
   Gl.bindBuffer(Gl.getArrayBuffer(gl), vertexBuffer, gl);
 
@@ -89,17 +92,39 @@ let _sendAttributeData = (vertexBuffer, program, gl) => {
   Gl.enableVertexAttribArray(positionLocation, gl);
 };
 
-let _sendCameraUniformData = ((vMatrix, pMatrix), program, gl) => {
-  let vMatrixLocation = Gl.getUniformLocation(program, "u_vMatrix", gl);
-  let pMatrixLocation = Gl.getUniformLocation(program, "u_pMatrix", gl);
+let _sendCameraUniformData =
+    ((vMatrix, pMatrix), program, shaderName, gl, state) => {
+  let vMatrixLocation =
+    Shader.GLSLLocation.unsafeGetUniformLocation(
+      shaderName,
+      "u_vMatrix",
+      state,
+    );
+  let pMatrixLocation =
+    Shader.GLSLLocation.unsafeGetUniformLocation(
+      shaderName,
+      "u_pMatrix",
+      state,
+    );
 
   Gl.uniformMatrix4fv(vMatrixLocation, false, vMatrix, gl);
   Gl.uniformMatrix4fv(pMatrixLocation, false, pMatrix, gl);
 };
 
-let _sendModelUniformData = ((mMatrix, color), program, gl) => {
-  let mMatrixLocation = Gl.getUniformLocation(program, "u_mMatrix", gl);
-  let colorLocation = Gl.getUniformLocation(program, "u_color", gl);
+let _sendModelUniformData =
+    ((mMatrix, color), program, shaderName, gl, state) => {
+  let mMatrixLocation =
+    Shader.GLSLLocation.unsafeGetUniformLocation(
+      shaderName,
+      "u_mMatrix",
+      state,
+    );
+  let colorLocation =
+    Shader.GLSLLocation.unsafeGetUniformLocation(
+      shaderName,
+      "u_color",
+      state,
+    );
 
   let (r, g, b) = color;
 
@@ -121,14 +146,36 @@ let render = (gl, state) => {
     state,
   )
   |> Js.Array.forEach(
-       ({mMatrix, vertexBuffer, indexBuffer, indexCount, color, program}) => {
+       (
+         {
+           mMatrix,
+           vertexBuffer,
+           indexBuffer,
+           indexCount,
+           color,
+           program,
+           shaderName,
+         },
+       ) => {
        Gl.useProgram(program, gl);
 
-       _sendAttributeData(vertexBuffer, program, gl);
+       _sendAttributeData(vertexBuffer, program, shaderName, gl, state);
 
-       _sendCameraUniformData((vMatrix, pMatrix), program, gl);
+       _sendCameraUniformData(
+         (vMatrix, pMatrix),
+         program,
+         shaderName,
+         gl,
+         state,
+       );
 
-       _sendModelUniformData((mMatrix, color), program, gl);
+       _sendModelUniformData(
+         (mMatrix, color),
+         program,
+         shaderName,
+         gl,
+         state,
+       );
 
        Gl.bindBuffer(Gl.getElementArrayBuffer(gl), indexBuffer, gl);
 

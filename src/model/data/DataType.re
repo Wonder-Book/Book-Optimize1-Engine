@@ -9,7 +9,14 @@ type vs = string;
 
 type fs = string;
 
-type glslData = {glslMap: ImmutableHashMap.t2(shaderName, (vs, fs))};
+type fieldName = string;
+
+type fieldNameArr = array(fieldName);
+
+type glslData = {
+  glslMap:
+    ImmutableHashMap.t2(shaderName, ((vs, fs), fieldNameArr, fieldNameArr)),
+};
 
 type programData = {
   programMap: ImmutableHashMap.t2(shaderName, GlType.program),
@@ -46,10 +53,28 @@ type canvas = DomExtendType.htmlElement;
 
 type viewData = {canvas: option(canvas)};
 
+type attributeLocationMap =
+  ImmutableHashMap.t2(
+    shaderName,
+    ImmutableHashMap.t2(fieldName, GlType.attributeLocation),
+  );
+
+type uniformLocationMap =
+  ImmutableHashMap.t2(
+    shaderName,
+    ImmutableHashMap.t2(fieldName, GlType.uniformLocation),
+  );
+
+type glslLocationData = {
+  attributeLocationMap,
+  uniformLocationMap,
+};
+
 type state = {
   viewData,
   deviceManagerData,
   glslData,
+  glslLocationData,
   programData,
   cameraData,
   allGameObjectData,

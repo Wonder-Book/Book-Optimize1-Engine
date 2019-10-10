@@ -96,8 +96,8 @@
 
         var state = wd.setClearColor([0.0, 0.0, 0.0, 1.0], state);
 
-        var state = wd.addGLSL("shader1", [vs1, fs1], state);
-        var state = wd.addGLSL("shader2", [vs2, fs2], state);
+        var state = wd.addGLSL("shader1", [[vs1, fs1], ["a_position"], ["u_mMatrix", "u_vMatrix", "u_pMatrix", "u_color"]], state);
+        var state = wd.addGLSL("shader2", [[vs2, fs2], ["a_position"], ["u_mMatrix", "u_vMatrix", "u_pMatrix", "u_color"]], state);
 
         for (let i = 0; i < 3500; i++) {
             state = wd.addGameObjectData(

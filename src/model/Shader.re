@@ -48,6 +48,74 @@ module Program = {
     );
 };
 
+module GLSLLocation = {
+  let createGLSLLocationData = () => {
+    attributeLocationMap: ImmutableHashMap.createEmpty(),
+    uniformLocationMap: ImmutableHashMap.createEmpty(),
+  };
+
+  let _getOrCreateLocationMapOfShader = (shaderName, locationMap) =>
+    switch (locationMap |> ImmutableHashMap.get(shaderName)) {
+    | None => ImmutableHashMap.createEmpty()
+    | Some(locationMapOfShader) => locationMapOfShader
+    };
+
+  let _getAttributeLocationMap = state =>
+    state.glslLocationData.attributeLocationMap;
+
+  let unsafeGetAttribLocation = (shaderName, fieldName, state) =>
+    _getAttributeLocationMap(state)
+    |> ImmutableHashMap.unsafeGet(shaderName)
+    |> ImmutableHashMap.unsafeGet(fieldName);
+
+  let setAttribLocation = (program, shaderName, fieldName, gl, state) => {
+    let attributeLocationMap = _getAttributeLocationMap(state);
+    let location = Gl.getAttribLocation(program, fieldName, gl);
+
+    location === (-1) ?
+      Error.error({j|Failed to get the storage location of $fieldName|j}) : ();
+
+    {
+      ...state,
+      glslLocationData: {
+        ...state.glslLocationData,
+        attributeLocationMap:
+          attributeLocationMap
+          |> _getOrCreateLocationMapOfShader(shaderName)
+          |> ImmutableHashMap.set(fieldName, location)
+          |> ImmutableHashMap.set(shaderName, _, attributeLocationMap),
+      },
+    };
+  };
+
+  let _getUniformLocationMap = state =>
+    state.glslLocationData.uniformLocationMap;
+
+  let unsafeGetUniformLocation = (shaderName, fieldName, state) =>
+    _getUniformLocationMap(state)
+    |> ImmutableHashMap.unsafeGet(shaderName)
+    |> ImmutableHashMap.unsafeGet(fieldName);
+
+  let setUniformLocation = (program, shaderName, fieldName, gl, state) => {
+    let uniformLocationMap = _getUniformLocationMap(state);
+    let location = Gl.getUniformLocation(program, fieldName, gl);
+    Obj.magic(location) === Js.Nullable.null ?
+      Error.error({j|Failed to get the storage location of $fieldName|j}) : ();
+
+    {
+      ...state,
+      glslLocationData: {
+        ...state.glslLocationData,
+        uniformLocationMap:
+          uniformLocationMap
+          |> _getOrCreateLocationMapOfShader(shaderName)
+          |> ImmutableHashMap.set(fieldName, location)
+          |> ImmutableHashMap.set(shaderName, _, uniformLocationMap),
+      },
+    };
+  };
+};
+
 let _compileShader = (gl, glslSource: string, shader) => {
   Gl.shaderSource(shader, glslSource, gl);
   Gl.compileShader(shader, gl);
@@ -146,12 +214,44 @@ let init = state => {
 
   GLSL.getAllValidGLSLEntries(state)
   |> ArrayUtils.reduceOneParam(
-       (. state, (shaderName, (vs, fs))) =>
-         Program.setProgram(
+       (.
+         state,
+         (
            shaderName,
-           gl |> Program.createProgram |> _initShader(vs, fs, gl),
-           state,
+           ((vs, fs), attributeFieldNameArr, uniformFieldNameArr),
          ),
+       ) => {
+         let program = gl |> Program.createProgram |> _initShader(vs, fs, gl);
+
+         let state =
+           attributeFieldNameArr
+           |> ArrayUtils.reduceOneParam(
+                (. state, fieldName) =>
+                  state
+                  |> GLSLLocation.setAttribLocation(
+                       program,
+                       shaderName,
+                       fieldName,
+                       gl,
+                     ),
+                state,
+              );
+         let state =
+           uniformFieldNameArr
+           |> ArrayUtils.reduceOneParam(
+                (. state, fieldName) =>
+                  state
+                  |> GLSLLocation.setUniformLocation(
+                       program,
+                       shaderName,
+                       fieldName,
+                       gl,
+                     ),
+                state,
+              );
+
+         state |> Program.setProgram(shaderName, program);
+       },
        state,
      );
 };
