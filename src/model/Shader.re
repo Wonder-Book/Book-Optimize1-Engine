@@ -24,7 +24,10 @@ module GLSL = {
 };
 
 module Program = {
-  let createProgramData = () => {programMap: ImmutableHashMap.createEmpty()};
+  let createProgramData = () => {
+    programMap: ImmutableHashMap.createEmpty(),
+    lastUsedProgram: None,
+  };
 
   let createProgram = gl => gl |> Gl.createProgram;
 
@@ -46,6 +49,21 @@ module Program = {
       _getProgramMap(state) |> ImmutableHashMap.set(shaderName, program),
       state,
     );
+
+  let use = (gl, program, {programData} as state) =>
+    switch (programData.lastUsedProgram) {
+    | Some(lastUsedProgram) when program === lastUsedProgram => state
+    | _ =>
+      Gl.useProgram(program, gl);
+
+      {
+        ...state,
+        programData: {
+          ...state.programData,
+          lastUsedProgram: Some(program),
+        },
+      };
+    };
 };
 
 module GLSLLocation = {

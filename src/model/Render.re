@@ -150,25 +150,30 @@ let _sendUniformShaderData = (gl, state) => {
   );
 
   Shader.GLSL.getAllValidGLSLEntries(state)
-  |> Js.Array.forEach(((shaderName, _)) => {
-       let program = Shader.Program.unsafeGetProgram(shaderName, state);
+  |> ArrayUtils.reduceOneParam(
+       (. state, (shaderName, _)) => {
+         let program = Shader.Program.unsafeGetProgram(shaderName, state);
 
-       Gl.useProgram(program, gl);
+         let state = Shader.Program.use(gl, program, state);
 
-       _sendCameraUniformData(
-         (vMatrix, pMatrix),
-         program,
-         shaderName,
-         gl,
-         state,
-       );
-     });
+         _sendCameraUniformData(
+           (vMatrix, pMatrix),
+           program,
+           shaderName,
+           gl,
+           state,
+         );
+
+         state
+       },
+       state,
+     );
 };
 
 let render = (gl, state) => {
   let state = _initVBOs(gl, state);
 
-  _sendUniformShaderData(gl, state);
+  let state = _sendUniformShaderData(gl, state);
 
   _changeGameObjectDataArrToRenderDataArr(
     GameObject.getGameObjectDataArr(state),
@@ -188,7 +193,7 @@ let render = (gl, state) => {
            shaderName,
          },
        ) => {
-         Gl.useProgram(program, gl);
+         let state = Shader.Program.use(gl, program, state);
 
          _sendAttributeData(vertexBuffer, program, shaderName, gl, state);
 

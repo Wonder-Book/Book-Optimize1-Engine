@@ -20,7 +20,7 @@ type glslData = {
 
 type programData = {
   programMap: ImmutableHashMap.t2(shaderName, GlType.program),
-  /* lastUsedProgram: option(GlType.program), */
+  lastUsedProgram: option(GlType.program),
 };
 
 type geometryData = {
