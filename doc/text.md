@@ -35,10 +35,6 @@ cache location:
 
 
 
-store send func when init shader:
-change glsl->2: add "u_alpha"
-
-
 
 
 
@@ -49,11 +45,27 @@ set camera data only once
 
 
 
-
-
-
-
 cache uniform data
+
+
+
+store send func when init shader:
+change glsl->2: add "u_alpha"
+need extract glsl sender data!
+
+
+if not exist , not add to send arr
+           AllGLSLLocationService.isUniformLocationExist(pos) ?
+           AllGLSLLocationService.isAttribLocationExist(pos) ?
+
+
+
+extract render state, sub state?
+
+
+
+
+
 
 
 cache use program

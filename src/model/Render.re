@@ -132,13 +132,32 @@ let _sendModelUniformData =
   Gl.uniform3f(colorLocation, r, g, b, gl);
 };
 
-let render = (gl, state) => {
+let _sendUniformShaderData = (gl, state) => {
   let (vMatrix, pMatrix) = (
     Camera.unsafeGetVMatrix(state),
     Camera.unsafeGetPMatrix(state),
   );
 
+  Shader.GLSL.getAllValidGLSLEntries(state)
+  |> Js.Array.forEach(((shaderName, _)) => {
+       let program = Shader.Program.unsafeGetProgram(shaderName, state);
+
+       Gl.useProgram(program, gl);
+       
+       _sendCameraUniformData(
+         (vMatrix, pMatrix),
+         program,
+         shaderName,
+         gl,
+         state,
+       );
+     });
+};
+
+let render = (gl, state) => {
   let state = _initVBOs(gl, state);
+
+  _sendUniformShaderData(gl, state);
 
   _changeGameObjectDataArrToRenderDataArr(
     GameObject.getGameObjectDataArr(state),
@@ -160,14 +179,6 @@ let render = (gl, state) => {
        Gl.useProgram(program, gl);
 
        _sendAttributeData(vertexBuffer, program, shaderName, gl, state);
-
-       _sendCameraUniformData(
-         (vMatrix, pMatrix),
-         program,
-         shaderName,
-         gl,
-         state,
-       );
 
        _sendModelUniformData(
          (mMatrix, color),
