@@ -209,12 +209,6 @@ module GLSLSender = {
     shaderCacheMap;
   };
 
-  let getOrCreateShaderCacheMap = (shaderName, uniformCacheMap) =>
-    switch (ImmutableHashMap.get(shaderName, uniformCacheMap)) {
-    | None => ImmutableHashMap.createEmpty()
-    | Some(map) => map
-    };
-
   let getUniformCacheMap = state => state.glslSenderData.uniformCacheMap;
 
   let setUniformCacheMap = (uniformCacheMap, state) => {
@@ -224,6 +218,19 @@ module GLSLSender = {
       uniformCacheMap,
     },
   };
+
+  let unsafeGetShaderCacheMap = (shaderName, state) =>
+    getUniformCacheMap(state) |> ImmutableHashMap.unsafeGet(shaderName);
+
+  let setShaderCacheMap = (shaderName, shaderCacheMap, state) =>
+    getUniformCacheMap(state)
+    |> ImmutableHashMap.set(shaderName, shaderCacheMap)
+    |> setUniformCacheMap(_, state);
+
+  let createShaderCacheMap = (shaderName, state) =>
+    getUniformCacheMap(state)
+    |> ImmutableHashMap.set(shaderName, ImmutableHashMap.createEmpty())
+    |> setUniformCacheMap(_, state);
 };
 
 let _compileShader = (gl, glslSource: string, shader) => {
@@ -360,7 +367,9 @@ let init = state => {
                 state,
               );
 
-         state |> Program.setProgram(shaderName, program);
+         state
+         |> GLSLSender.createShaderCacheMap(shaderName)
+         |> Program.setProgram(shaderName, program);
        },
        state,
      );

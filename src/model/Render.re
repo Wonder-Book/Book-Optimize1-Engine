@@ -112,7 +112,7 @@ let _sendCameraUniformData =
 };
 
 let _sendModelUniformData =
-    ((mMatrix, color), program, shaderName, gl, state, shaderCacheMap) => {
+    ((mMatrix, color), program, shaderName, gl, state) => {
   let mMatrixLocation =
     Shader.GLSLLocation.unsafeGetUniformLocation(
       shaderName,
@@ -131,11 +131,15 @@ let _sendModelUniformData =
 
   Gl.uniformMatrix4fv(mMatrixLocation, false, mMatrix, gl);
 
-  Shader.GLSLSender.sendFloat3(
-    gl,
-    (colorFieldName, colorLocation),
-    [|r, g, b|],
-    shaderCacheMap,
+  Shader.GLSLSender.setShaderCacheMap(
+    shaderName,
+    Shader.GLSLSender.unsafeGetShaderCacheMap(shaderName, state)
+    |> Shader.GLSLSender.sendFloat3(
+         gl,
+         (colorFieldName, colorLocation),
+         [|r, g, b|],
+       ),
+    state,
   );
 };
 
@@ -166,59 +170,49 @@ let render = (gl, state) => {
 
   _sendUniformShaderData(gl, state);
 
-  let uniformCacheMap =
-    _changeGameObjectDataArrToRenderDataArr(
-      GameObject.getGameObjectDataArr(state),
-      gl,
-      state,
-    )
-    |> ArrayUtils.reduceOneParam(
-         (.
-           uniformCacheMap,
-           {
-             mMatrix,
-             vertexBuffer,
-             indexBuffer,
-             indexCount,
-             color,
-             program,
-             shaderName,
-           },
-         ) => {
-           Gl.useProgram(program, gl);
-
-           _sendAttributeData(vertexBuffer, program, shaderName, gl, state);
-
-           let shaderCacheMap =
-             Shader.GLSLSender.getOrCreateShaderCacheMap(
-               shaderName,
-               uniformCacheMap,
-             );
-
-           let shaderCacheMap =
-             shaderCacheMap
-             |> _sendModelUniformData(
-                  (mMatrix, color),
-                  program,
-                  shaderName,
-                  gl,
-                  state,
-                );
-
-           Gl.bindBuffer(Gl.getElementArrayBuffer(gl), indexBuffer, gl);
-
-           Gl.drawElements(
-             Gl.getTriangles(gl),
-             indexCount,
-             Gl.getUnsignedShort(gl),
-             0,
-             gl,
-           );
-
-           uniformCacheMap |> ImmutableHashMap.set(shaderName, shaderCacheMap);
+  _changeGameObjectDataArrToRenderDataArr(
+    GameObject.getGameObjectDataArr(state),
+    gl,
+    state,
+  )
+  |> ArrayUtils.reduceOneParam(
+       (.
+         state,
+         {
+           mMatrix,
+           vertexBuffer,
+           indexBuffer,
+           indexCount,
+           color,
+           program,
+           shaderName,
          },
-         Shader.GLSLSender.getUniformCacheMap(state),
-       );
+       ) => {
+         Gl.useProgram(program, gl);
 
-  state |> Shader.GLSLSender.setUniformCacheMap(uniformCacheMap);
+         _sendAttributeData(vertexBuffer, program, shaderName, gl, state);
+
+         let state =
+           state
+           |> _sendModelUniformData(
+                (mMatrix, color),
+                program,
+                shaderName,
+                gl,
+              );
+
+         Gl.bindBuffer(Gl.getElementArrayBuffer(gl), indexBuffer, gl);
+
+         Gl.drawElements(
+           Gl.getTriangles(gl),
+           indexCount,
+           Gl.getUnsignedShort(gl),
+           0,
+           gl,
+         );
+
+         state;
+       },
+       state,
+     );
 };

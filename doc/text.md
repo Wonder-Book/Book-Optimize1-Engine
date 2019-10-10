@@ -62,38 +62,21 @@ uniformCacheMap, shaderCacheMap is MutableHashMap
 
 
 
+discuss whether to reduce state in Render->render iterate?
+now reduce it instead of:
+1.reduce small data(e.g. uniformCacheMap)
+2.use mutable(e.g. change shaderCacheMap to mutable hashMap)
 
 
-
-- extract shaderIndex
-add SparseMap
-
-
-
+because reduce state has these advantage:
+1.improve code maintainablity
+    unify to reduce one state, instead of many small data;
+    immutable data has little bug than mutable data;
 
 
-
-
-
-- store send func when init shader
-change glsl->2: add "u_alpha"
-need extract glsl sender data!
-
-
-if not exist , not add to send arr
-           AllGLSLLocationService.isUniformLocationExist(pos) ?
-           AllGLSLLocationService.isAttribLocationExist(pos) ?
-
-
-
-extract render state, sub state?
-
-
-
-
-
-
-
+because reduce state has these disadvantage:
+1.bad performance
+spend more time for gc
 
 
 
