@@ -1,7 +1,7 @@
 type vaoExt = {
   .
-  [@bs.meth] "createVertexArrayOES": unit => GlType.vao,
-  [@bs.meth] "bindVertexArrayOES": Js.Nullable.t(GlType.vao) => unit,
+  [@bs.meth] "createVertexArrayOES": unit => Gl.vao,
+  [@bs.meth] "bindVertexArrayOES": Js.Nullable.t(Gl.vao) => unit,
 };
 
-external glExtensionToVAOExt: GlType.extension => vaoExt = "%identity";
+external glExtensionToVAOExt: Gl.extension => vaoExt = "%identity";

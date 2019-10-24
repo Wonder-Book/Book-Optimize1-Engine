@@ -1,6 +1,9 @@
 open DataType;
 
-let createDeviceManagerData = () => {gl: None, clearColor: (0., 0., 0., 1.)};
+let createDeviceManagerData = () => {
+  gl: None,
+  clearColor: Color.Color4.create(0., 0., 0., 1.),
+};
 
 let setGl = (gl, state) => {
   ...state,
@@ -14,8 +17,16 @@ let unsafeGetGl = state => state.deviceManagerData.gl |> Option.unsafeGet;
 
 let getClearColor = state => state.deviceManagerData.clearColor;
 
+let setClearColor = (color, state) => {
+  ...state,
+  deviceManagerData: {
+    ...state.deviceManagerData,
+    clearColor: color,
+  },
+};
+
 let clearColor = (gl, state) => {
-  let (r, g, b, a) = getClearColor(state);
+  let (r, g, b, a) = getClearColor(state) |> Color.Color4.value;
 
   Gl.clearColor(r, g, b, a, gl);
 

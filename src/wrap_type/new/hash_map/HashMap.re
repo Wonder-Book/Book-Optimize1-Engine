@@ -5,8 +5,8 @@ let unsafeGet = (key: string, map) =>
 
 /* TODO move to NullService */
 let _isEmpty = value =>
-  value === Obj.magic(Js.Nullable.null)
-  || value === Obj.magic(Js.Nullable.undefined);
+  value === ObjMagic.convertToMagicType(Js.Nullable.null)
+  || value === ObjMagic.convertToMagicType(Js.Nullable.undefined);
 
 let get = (key: string, map) => {
   let value = unsafeGet(key, map);
@@ -63,7 +63,7 @@ let copy =
     (map: Js.Dict.t(Js.Nullable.t('a))): Js.Dict.t(Js.Nullable.t('a)) =>
   map
   |> entries
-  |> ArrayUtils.reduceOneParam(
+  |> ArrayWT.reduceOneParam(
        (. newMap, (key, value)) => newMap |> _mutableSet(key, value),
        _createEmpty(),
      )

@@ -15,12 +15,19 @@ module GLSL = {
 
   let addGLSL = (shaderName, glslData, state) =>
     _setGLSLMap(
-      _getGLSLMap(state) |> ImmutableHashMap.set(shaderName, glslData),
+      _getGLSLMap(state)
+      |> ImmutableHashMap.set(
+           ShaderWT.ShaderName.value(shaderName),
+           glslData,
+         ),
       state,
     );
 
   let getAllValidGLSLEntries = state =>
     _getGLSLMap(state) |> ImmutableHashMap.getValidEntries;
+
+  let getAllValidGLSLEntryList = state =>
+    state |> getAllValidGLSLEntries |> Array.to_list;
 };
 
 module Program = {
@@ -91,7 +98,10 @@ module GLSLLocation = {
     let location = Gl.getAttribLocation(program, fieldName, gl);
 
     location === (-1) ?
-      Error.error({j|Failed to get the storage location of $fieldName|j}) : ();
+      Error.raiseError(
+        {j|Failed to get the storage location of $fieldName|j},
+      ) :
+      ();
 
     {
       ...state,
@@ -118,7 +128,10 @@ module GLSLLocation = {
     let uniformLocationMap = _getUniformLocationMap(state);
     let location = Gl.getUniformLocation(program, fieldName, gl);
     Obj.magic(location) === Js.Nullable.null ?
-      Error.error({j|Failed to get the storage location of $fieldName|j}) : ();
+      Error.raiseError(
+        {j|Failed to get the storage location of $fieldName|j},
+      ) :
+      ();
 
     {
       ...state,
@@ -169,23 +182,11 @@ module GLSLSender = {
 
     has ?
       (shaderCacheMap, _queryIsNotCacheWithCache(cache, x, y, z)) :
-      (
-        _setCache(shaderCacheMap, name, [|x, y, z|]),
-        true,
-        /* _setCache(shaderCacheMap, name, [|x, y, z|]) |> ignore;
-           true; */
-      );
+      (_setCache(shaderCacheMap, name, [|x, y, z|]), true);
   };
 
   let sendFloat3 =
-      (
-        gl,
-        /* shaderCacheMap:  shaderCacheMap, */
-        (name: string, pos: GlType.uniformLocation),
-        valueArr,
-        /* state */
-        shaderCacheMap,
-      ) => {
+      (gl, (name: string, pos: Gl.uniformLocation), valueArr, shaderCacheMap) => {
     /* WonderLog.Contract.requireCheck(
          () =>
            WonderLog.(
@@ -213,14 +214,7 @@ module GLSLSender = {
       _isNotCacheVector3AndSetCache(shaderCacheMap, name, (x, y, z));
 
     if (isNotCache) {
-      /* WonderLog.Log.log(("send float3: ", name, (x, y, z))) |> ignore; */
-      Gl.uniform3f(
-        pos,
-        x,
-        y,
-        z,
-        gl,
-      );
+      Gl.uniform3f(pos, x, y, z, gl);
     } else {
       ();
     };
@@ -271,7 +265,7 @@ let _compileShader = (gl, glslSource: string, shader) => {
       {
         let message = Gl.getShaderInfoLog(shader, gl);
 
-        Error.error(
+        Error.raiseError(
           {j|shader info log: $message
         glsl source: $glslSource
         |j},
@@ -291,7 +285,7 @@ let _linkProgram = (program, gl) => {
       {
         let message = Gl.getProgramInfoLog(program, gl);
 
-        Error.error({j|link program error: $message|j});
+        Error.raiseError({j|link program raiseError: $message|j});
       } :
       () :
     ();
@@ -355,51 +349,83 @@ let _initShader = (vsSource: string, fsSource: string, gl, program) => {
   program;
 };
 
-let init = state => {
-  let gl = DeviceManager.unsafeGetGl(state);
-
-  GLSL.getAllValidGLSLEntries(state)
-  |> ArrayUtils.reduceOneParam(
-       (.
-         state,
+let _changeGLSLDataListToInitShaderDataList = glslDataList =>
+  glslDataList
+  |> List.map(
+       (
          (
            shaderName,
-           ((vs, fs), attributeFieldNameArr, uniformFieldNameArr),
+           ((vs, fs), attributeFieldNameList, uniformFieldNameList),
          ),
-       ) => {
-         let program = gl |> Program.createProgram |> _initShader(vs, fs, gl);
+       ) =>
+       (
+         {
+           shaderName,
+           vs: GLSLWT.VS.value(vs),
+           fs: GLSLWT.FS.value(fs),
+           attributeFieldNameList:
+             attributeFieldNameList
+             |> List.map(fieldName => ShaderWT.FieldName.value(fieldName)),
+           uniformFieldNameList:
+             uniformFieldNameList
+             |> List.map(fieldName => ShaderWT.FieldName.value(fieldName)),
+         }: InitShaderDataType.initShaderData
+       )
+     );
 
-         let state =
-           attributeFieldNameArr
-           |> ArrayUtils.reduceOneParam(
-                (. state, fieldName) =>
-                  state
-                  |> GLSLLocation.setAttribLocation(
-                       program,
-                       shaderName,
-                       fieldName,
-                       gl,
-                     ),
-                state,
-              );
-         let state =
-           uniformFieldNameArr
-           |> ArrayUtils.reduceOneParam(
-                (. state, fieldName) =>
-                  state
-                  |> GLSLLocation.setUniformLocation(
-                       program,
-                       shaderName,
-                       fieldName,
-                       gl,
-                     ),
-                state,
-              );
+let init = (state: DataType.state): Result.t(DataType.state, Js.Exn.t) => {
+  let gl = DeviceManager.unsafeGetGl(state);
 
-         state
-         |> GLSLSender.createShaderCacheMap(shaderName)
-         |> Program.setProgram(shaderName, program);
-       },
-       state,
+  GLSL.getAllValidGLSLEntryList(state)
+  |> _changeGLSLDataListToInitShaderDataList
+  |> Result.tryCatch(initShaderDataList =>
+       initShaderDataList
+       |> List.fold_left(
+            (
+              state,
+              {
+                shaderName,
+                vs,
+                fs,
+                attributeFieldNameList,
+                uniformFieldNameList,
+              }: InitShaderDataType.initShaderData,
+            ) => {
+              let program =
+                gl |> Program.createProgram |> _initShader(vs, fs, gl);
+
+              let state =
+                attributeFieldNameList
+                |> List.fold_left(
+                     (state, fieldName) =>
+                       state
+                       |> GLSLLocation.setAttribLocation(
+                            program,
+                            shaderName,
+                            fieldName,
+                            gl,
+                          ),
+                     state,
+                   );
+              let state =
+                uniformFieldNameList
+                |> List.fold_left(
+                     (state, fieldName) =>
+                       state
+                       |> GLSLLocation.setUniformLocation(
+                            program,
+                            shaderName,
+                            fieldName,
+                            gl,
+                          ),
+                     state,
+                   );
+
+              state
+              |> GLSLSender.createShaderCacheMap(shaderName)
+              |> Program.setProgram(shaderName, program);
+            },
+            state,
+          )
      );
 };

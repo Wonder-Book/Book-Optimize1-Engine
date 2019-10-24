@@ -1,41 +1,36 @@
 type deviceManagerData = {
-  gl: option(GlType.webgl1Context),
-  clearColor: (float, float, float, float),
+  gl: option(Gl.webgl1Context),
+  clearColor: Color.Color4.t,
 };
-
-type shaderName = string;
-
-type vs = string;
-
-type fs = string;
-
-type fieldName = string;
-
-type fieldNameArr = array(fieldName);
 
 type glslData = {
   glslMap:
-    ImmutableHashMap.t2(shaderName, ((vs, fs), fieldNameArr, fieldNameArr)),
+    ImmutableHashMap.t2(
+      ShaderWT.ShaderName.t,
+      (
+        (GLSLWT.VS.t, GLSLWT.FS.t),
+        list(ShaderWT.FieldName.t),
+        list(ShaderWT.FieldName.t),
+      ),
+    ),
 };
 
 type programData = {
-  programMap: ImmutableHashMap.t2(shaderName, GlType.program),
-  lastUsedProgram: option(GlType.program),
+  programMap: ImmutableHashMap.t2(ShaderWT.ShaderName.t, Gl.program),
+  lastUsedProgram: option(Gl.program),
 };
 
 type geometryData = {
-  vertices: Js.Typed_array.Float32Array.t,
-  indices: Js.Typed_array.Uint16Array.t,
-  /* vertexBuffer: option(GlType.buffer),
-     indexBuffer: option(GlType.buffer), */
-  vao: option(GlType.vao),
+  vertices: GeometryPoints.Vertices.t,
+  indices: GeometryPoints.Indices.t,
+  vao: option(Gl.vao),
 };
 
-type transformData = {mMatrix: MatrixType.matrix};
+type transformData = {mMatrix: CoordinateTransformationMatrix.Model.t};
 
 type materialData = {
-  shaderName,
-  color: (float, float, float),
+  shaderName: ShaderWT.ShaderName.t,
+  colors: list(Color.Color3.t),
 };
 
 type gameObjectData = {
@@ -44,27 +39,27 @@ type gameObjectData = {
   materialData,
 };
 
-type allGameObjectData = {gameObjectDataArr: array(gameObjectData)};
+type allGameObjectData = {gameObjectDataList: list(gameObjectData)};
 
 type cameraData = {
-  vMatrix: option(MatrixType.matrix),
-  pMatrix: option(MatrixType.matrix),
+  vMatrix: option(CoordinateTransformationMatrix.View.t),
+  pMatrix: option(CoordinateTransformationMatrix.Projection.t),
 };
 
-type canvas = DomExtendType.htmlElement;
+type canvas = DomExtend.htmlElement;
 
 type viewData = {canvas: option(canvas)};
 
 type attributeLocationMap =
   ImmutableHashMap.t2(
-    shaderName,
-    ImmutableHashMap.t2(fieldName, GlType.attributeLocation),
+    ShaderWT.ShaderName.t,
+    ImmutableHashMap.t2(ShaderWT.FieldName.t, Gl.attributeLocation),
   );
 
 type uniformLocationMap =
   ImmutableHashMap.t2(
-    shaderName,
-    ImmutableHashMap.t2(fieldName, GlType.uniformLocation),
+    ShaderWT.ShaderName.t,
+    ImmutableHashMap.t2(ShaderWT.FieldName.t, Gl.uniformLocation),
   );
 
 type glslLocationData = {
@@ -72,11 +67,12 @@ type glslLocationData = {
   uniformLocationMap,
 };
 
-type shaderCacheMap = ImmutableHashMap.t2(fieldName, array(float));
+type shaderCacheMap =
+  ImmutableHashMap.t2(ShaderWT.FieldName.t, array(float));
 
 type glslSenderData = {
-  uniformCacheMap: ImmutableHashMap.t2(shaderName, shaderCacheMap),
-  lastBindedVAO: option(GlType.vao),
+  uniformCacheMap: ImmutableHashMap.t2(ShaderWT.ShaderName.t, shaderCacheMap),
+  lastBindedVAO: option(Gl.vao),
 };
 
 type gpuDetectData = {vao: option(GPUDetectType.vaoExt)};

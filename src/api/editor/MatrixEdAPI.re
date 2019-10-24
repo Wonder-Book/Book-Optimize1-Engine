@@ -4,4 +4,4 @@ let buildPerspective = Matrix.buildPerspective;
 
 let setLookAt = Matrix.setLookAt;
 
-let createIdentityMatrix4 = Matrix.createIdentityMatrix4;
+let createIdentityMatrix = Matrix.createIdentityMatrix;

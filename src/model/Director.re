@@ -19,16 +19,3 @@ let loopBody = state => {
 
   Render.render(gl, state);
 };
-
-let rec _loop = () =>
-  DomExtend.requestAnimationFrame((time: float) => {
-    Data.unsafeGetState() |> loopBody |> Data.setState |> ignore;
-
-    _loop() |> ignore;
-  });
-
-let loop = state => {
-  Data.setState(state) |> ignore;
-
-  _loop();
-};

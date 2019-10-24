@@ -21,9 +21,11 @@ module Geometry = {
         0.5,
         (-0.5),
         0.0,
-      |]);
+      |])
+      |> GeometryPoints.Vertices.create;
 
-    let indices = Uint16Array.make([|0, 1, 2|]);
+    let indices =
+      Uint16Array.make([|0, 1, 2|]) |> GeometryPoints.Indices.create;
 
     (vertices, indices);
   };
@@ -34,51 +36,47 @@ module Geometry = {
     vao: None,
   };
 
-  /* let getVertexBuffer = (geometryData) => geometryData.vertexBuffer; */
-
-  /* let getBuffers = ({vertexBuffer, indexBuffer}) => (
-       vertexBuffer,
-       indexBuffer,
-     );
-
-     let unsafeGetBuffers = ({vertexBuffer, indexBuffer}) => (
-       vertexBuffer |> Option.unsafeGet,
-       indexBuffer |> Option.unsafeGet,
-     );
-
-     let setBufferts = ((vertexBuffer, indexBuffer), geometryData) => {
-       ...geometryData,
-       vertexBuffer: Some(vertexBuffer),
-       indexBuffer: Some(indexBuffer),
-     }; */
-
   let unsafeGetVAO = ({vao}: geometryData) => vao |> Option.unsafeGet;
 
-  let setVAO = (vao: GlType.vao, geometryData: geometryData) => {
+  let setVAO = (vao: Gl.vao, geometryData: geometryData) => {
     ...geometryData,
     vao: Some(vao),
   };
-
-  /* let getIndexBuffer = (geometryData) => geometryData.indexBuffer; */
 
   let getIndices = ({indices}) => indices;
 };
 
 module Material = {
-  let createMaterialData = (shaderName, color) => {shaderName, color};
+  let createMaterialData = (shaderName, colors) => {shaderName, colors};
 
-  let getColor = ({color}) => color;
+  let getColors = ({colors}) => colors;
 
   let getShaderName = ({shaderName}) => shaderName;
 };
 
-let getGameObjectDataArr = state => state.allGameObjectData.gameObjectDataArr;
+let getGameObjectDataList = state =>
+  state.allGameObjectData.gameObjectDataList;
 
-let setGameObjectDataArr = (gameObjectDataArr, state) => {
+let setGameObjectDataList = (gameObjectDataList, state) => {
   ...state,
   allGameObjectData: {
-    gameObjectDataArr: gameObjectDataArr,
+    gameObjectDataList: gameObjectDataList,
   },
 };
 
-let createAllGameObjectData = () => {gameObjectDataArr: [||]};
+let createAllGameObjectData = () => {gameObjectDataList: []};
+
+let addGameObjectData =
+    (mMatrix, (vertices, indices), (shaderName, colors), state) =>
+  setGameObjectDataList(
+    [
+      {
+        transformData: Transform.createTransformData(mMatrix),
+        geometryData:
+          Geometry.createGeometryDataWithGeometryPoints(vertices, indices),
+        materialData: Material.createMaterialData(shaderName, colors),
+      },
+      ...getGameObjectDataList(state),
+    ],
+    state,
+  );
