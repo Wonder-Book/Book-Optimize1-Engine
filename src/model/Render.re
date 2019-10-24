@@ -111,11 +111,7 @@ let _sendAttributeData = (vao, state) =>
       Js.Nullable.return(vao),
     );
 
-    switch (lastSendedVAOpt) {
-    | Some(lastSendedVAO) =>
-      Shader.GLSLSender.setLastSendedVAO(lastSendedVAO, state)
-    | None => state
-    };
+    Shader.GLSLSender.setLastSendedVAO(vao, state);
   };
 
 let _sendCameraUniformData =
