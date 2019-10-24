@@ -58,13 +58,6 @@ let _createVAOs =
   vao;
 };
 
-let _getOrCreateVAOs =
-    ({vertices, indices, vao}, shaderName, gl, vaoExt, state) =>
-  switch (vao) {
-  | None => _createVAOs((vertices, indices), shaderName, gl, vaoExt, state)
-  | _ => vao |> Option.unsafeGet
-  };
-
 let _initVAOs = (gl, state) => {
   let vaoExt = GPUDetect.unsafeGetVAOExt(state);
 
@@ -74,14 +67,18 @@ let _initVAOs = (gl, state) => {
        {
          ...gameObjectData,
          geometryData:
-           _getOrCreateVAOs(
-             geometryData,
-             GameObject.Material.getShaderName(materialData),
-             gl,
-             vaoExt,
-             state,
-           )
-           |> GameObject.Geometry.setVAO(_, geometryData),
+           switch (geometryData.vao) {
+           | None =>
+             _createVAOs(
+               (geometryData.vertices, geometryData.indices),
+               GameObject.Material.getShaderName(materialData),
+               gl,
+               vaoExt,
+               state,
+             )
+             |> GameObject.Geometry.setVAO(_, geometryData)
+           | _ => geometryData
+           },
        }
      )
   |> GameObject.setGameObjectDataArr(_, state);
