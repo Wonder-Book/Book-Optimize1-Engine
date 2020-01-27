@@ -18,4 +18,4 @@ let _detectExtension = (gl, state) => {
 
 let detect = (gl, state) => state |> _detectExtension(gl);
 
-let unsafeGetVAOExt = state => state.gpuDetectData.vao |> Option.unsafeGet;
+let unsafeGetVAOExtByThrow = state => state.gpuDetectData.vao |> Option.unsafeGetByThrow;

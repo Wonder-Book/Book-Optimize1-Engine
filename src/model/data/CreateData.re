@@ -9,5 +9,5 @@ let createState = () => {
   programData: Shader.Program.createProgramData(),
   cameraData: Camera.createCameraData(),
   viewData: View.createViewData(),
-  allGameObjectData: GameObject.createAllGameObjectData(),
+  gameObjectData: GameObject.createAllGameObjectData(),
 };

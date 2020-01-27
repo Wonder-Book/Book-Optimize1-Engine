@@ -26,7 +26,7 @@ let _createVAOs =
   );
 
   let positionLocation =
-    Shader.GLSLLocation.unsafeGetAttribLocation(
+    Shader.GLSLLocation.unsafeGetAttribLocationByNull(
       shaderName,
       "a_position",
       state,
@@ -59,9 +59,9 @@ let _createVAOs =
 };
 
 let _initVAOs = (gl, state) => {
-  let vaoExt = GPUDetect.unsafeGetVAOExt(state);
+  let vaoExt = GPUDetect.unsafeGetVAOExtByThrow(state);
 
-  GameObject.getGameObjectDataList(state)
+  GameObject.getAllGameObjectData(state)
   |> List.map(
        ({transformData, geometryData, materialData} as gameObjectData) =>
        {
@@ -85,15 +85,14 @@ let _initVAOs = (gl, state) => {
            },
        }
      )
-  |> GameObject.setGameObjectDataList(_, state);
+  |> GameObject.setAllGameObjectData(_, state);
 };
 
 let _getProgram = (shaderName, state) =>
-  Shader.Program.unsafeGetProgram(shaderName, state);
+  Shader.Program.unsafeGetProgramByNull(shaderName, state);
 
-let _changeGameObjectDataListToRenderDataList =
-    (gameObjectDataList, gl, state) =>
-  gameObjectDataList
+let _changeAllGameObjectDataToRenderDataList = (allGameObjectData, gl, state) =>
+  allGameObjectData
   |> List.map(
        ({transformData, geometryData, materialData} as gameObjectData) => {
        let shaderName =
@@ -104,7 +103,7 @@ let _changeGameObjectDataListToRenderDataList =
          mMatrix:
            GameObject.Transform.getMMatrix(transformData)
            |> CoordinateTransformationMatrix.Model.getMatrixValue,
-         vao: GameObject.Geometry.unsafeGetVAO(geometryData),
+         vao: GameObject.Geometry.unsafeGetVAOByThrow(geometryData),
          indexCount:
            GameObject.Geometry.getIndices(geometryData)
            |> GeometryPoints.Indices.length,
@@ -120,7 +119,7 @@ let _sendAttributeData = (vao, state) =>
   switch (Shader.GLSLSender.getLastSendedVAO(state)) {
   | Some(lastSendedVAO) when lastSendedVAO === vao => state
   | lastSendedVAOpt =>
-    GPUDetect.unsafeGetVAOExt(state)##bindVertexArrayOES(
+    GPUDetect.unsafeGetVAOExtByThrow(state)##bindVertexArrayOES(
       Js.Nullable.return(vao),
     );
 
@@ -130,13 +129,13 @@ let _sendAttributeData = (vao, state) =>
 let _sendCameraUniformData =
     ((vMatrix, pMatrix), program, shaderName, gl, state) => {
   let vMatrixLocation =
-    Shader.GLSLLocation.unsafeGetUniformLocation(
+    Shader.GLSLLocation.unsafeGetUniformLocationByNull(
       shaderName,
       "u_vMatrix",
       state,
     );
   let pMatrixLocation =
-    Shader.GLSLLocation.unsafeGetUniformLocation(
+    Shader.GLSLLocation.unsafeGetUniformLocationByNull(
       shaderName,
       "u_pMatrix",
       state,
@@ -149,7 +148,7 @@ let _sendCameraUniformData =
 let _sendModelUniformData =
     ((mMatrix, colors), program, shaderName, gl, state) => {
   let mMatrixLocation =
-    Shader.GLSLLocation.unsafeGetUniformLocation(
+    Shader.GLSLLocation.unsafeGetUniformLocationByNull(
       shaderName,
       "u_mMatrix",
       state,
@@ -163,7 +162,7 @@ let _sendModelUniformData =
          ((state, index), (r, g, b)) => {
            let colorFieldName = {j|u_color$index|j};
            let colorLocation =
-             Shader.GLSLLocation.unsafeGetUniformLocation(
+             Shader.GLSLLocation.unsafeGetUniformLocationByNull(
                shaderName,
                colorFieldName,
                state,
@@ -172,7 +171,7 @@ let _sendModelUniformData =
            (
              Shader.GLSLSender.setShaderCacheMap(
                shaderName,
-               Shader.GLSLSender.unsafeGetShaderCacheMap(shaderName, state)
+               Shader.GLSLSender.unsafeGetShaderCacheMapByNull(shaderName, state)
                |> Shader.GLSLSender.sendFloat3(
                     gl,
                     (colorFieldName, colorLocation),
@@ -191,8 +190,8 @@ let _sendModelUniformData =
 
 let _sendUniformShaderData = (gl, state) => {
   let (vMatrix, pMatrix) = (
-    Camera.unsafeGetVMatrix(state),
-    Camera.unsafeGetPMatrix(state),
+    Camera.unsafeGetVMatrixByThrow(state),
+    Camera.unsafeGetPMatrixByThrow(state),
   );
   let (vMatrix, pMatrix) = (
     vMatrix |> CoordinateTransformationMatrix.View.getMatrixValue,
@@ -202,7 +201,7 @@ let _sendUniformShaderData = (gl, state) => {
   Shader.GLSL.getAllValidGLSLEntryList(state)
   |> List.fold_left(
        (state, (shaderName, _)) => {
-         let program = Shader.Program.unsafeGetProgram(shaderName, state);
+         let program = Shader.Program.unsafeGetProgramByNull(shaderName, state);
 
          let state = Shader.Program.use(gl, program, state);
 
@@ -221,12 +220,14 @@ let _sendUniformShaderData = (gl, state) => {
 };
 
 let render = (gl, state) => {
+  DeviceManager.initGlState(gl);
+
   let state = _initVAOs(gl, state);
 
   let state = _sendUniformShaderData(gl, state);
 
-  _changeGameObjectDataListToRenderDataList(
-    GameObject.getGameObjectDataList(state),
+  _changeAllGameObjectDataToRenderDataList(
+    GameObject.getAllGameObjectData(state),
     gl,
     state,
   )

@@ -48,8 +48,8 @@ module Program = {
     },
   };
 
-  let unsafeGetProgram = (shaderName, state) =>
-    _getProgramMap(state) |> ImmutableHashMap.unsafeGet(shaderName);
+  let unsafeGetProgramByNull = (shaderName, state) =>
+    _getProgramMap(state) |> ImmutableHashMap.unsafeGetByNull(shaderName);
 
   let setProgram = (shaderName, program, state) =>
     _setProgramMap(
@@ -88,20 +88,20 @@ module GLSLLocation = {
   let _getAttributeLocationMap = state =>
     state.glslLocationData.attributeLocationMap;
 
-  let unsafeGetAttribLocation = (shaderName, fieldName, state) =>
+  let unsafeGetAttribLocationByNull = (shaderName, fieldName, state) =>
     _getAttributeLocationMap(state)
-    |> ImmutableHashMap.unsafeGet(shaderName)
-    |> ImmutableHashMap.unsafeGet(fieldName);
+    |> ImmutableHashMap.unsafeGetByNull(shaderName)
+    |> ImmutableHashMap.unsafeGetByNull(fieldName);
 
   let setAttribLocation = (program, shaderName, fieldName, gl, state) => {
     let attributeLocationMap = _getAttributeLocationMap(state);
     let location = Gl.getAttribLocation(program, fieldName, gl);
 
-    location === (-1) ?
-      Error.raiseError(
-        {j|Failed to get the storage location of $fieldName|j},
-      ) :
-      ();
+    location === (-1)
+      ? ErrorUtils.raiseError(
+          {j|Failed to get the storage location of $fieldName|j},
+        )
+      : ();
 
     {
       ...state,
@@ -119,19 +119,23 @@ module GLSLLocation = {
   let _getUniformLocationMap = state =>
     state.glslLocationData.uniformLocationMap;
 
-  let unsafeGetUniformLocation = (shaderName, fieldName, state) =>
+  let unsafeGetUniformLocationByNull = (shaderName, fieldName, state) =>
     _getUniformLocationMap(state)
-    |> ImmutableHashMap.unsafeGet(shaderName)
-    |> ImmutableHashMap.unsafeGet(fieldName);
+    |> ImmutableHashMap.unsafeGetByNull(shaderName)
+    |> ImmutableHashMap.unsafeGetByNull(fieldName);
+
+  let _unsafeGetUniformLocationByThrow = (program, name, gl) =>
+    switch (Gl.getUniformLocation(program, name, gl)) {
+    | pos when !Js.Null.test(pos) => Js.Null.getUnsafe(pos)
+    | _ =>
+      ErrorUtils.raiseErrorAndReturn(
+        {j|Failed to get the storage location of $name|j},
+      )
+    };
 
   let setUniformLocation = (program, shaderName, fieldName, gl, state) => {
     let uniformLocationMap = _getUniformLocationMap(state);
-    let location = Gl.getUniformLocation(program, fieldName, gl);
-    Obj.magic(location) === Js.Nullable.null ?
-      Error.raiseError(
-        {j|Failed to get the storage location of $fieldName|j},
-      ) :
-      ();
+    let location = _unsafeGetUniformLocationByThrow(program, fieldName, gl);
 
     {
       ...state,
@@ -154,7 +158,7 @@ module GLSLSender = {
   };
 
   let _fastGetCache = (shaderCacheMap, name: string) =>
-    shaderCacheMap |> ImmutableHashMap.fastGet(name);
+    shaderCacheMap |> ImmutableHashMap.fastGetByNull(name);
 
   let _queryIsNotCacheWithCache = (cache, x, y, z) => {
     let isNotCached = ref(false);
@@ -180,9 +184,9 @@ module GLSLSender = {
       (shaderCacheMap, name: string, (x: float, y: float, z: float)) => {
     let (has, cache) = _fastGetCache(shaderCacheMap, name);
 
-    has ?
-      (shaderCacheMap, _queryIsNotCacheWithCache(cache, x, y, z)) :
-      (_setCache(shaderCacheMap, name, [|x, y, z|]), true);
+    has
+      ? (shaderCacheMap, _queryIsNotCacheWithCache(cache, x, y, z))
+      : (_setCache(shaderCacheMap, name, [|x, y, z|]), true);
   };
 
   let sendFloat3 =
@@ -232,8 +236,8 @@ module GLSLSender = {
     },
   };
 
-  let unsafeGetShaderCacheMap = (shaderName, state) =>
-    getUniformCacheMap(state) |> ImmutableHashMap.unsafeGet(shaderName);
+  let unsafeGetShaderCacheMapByNull = (shaderName, state) =>
+    getUniformCacheMap(state) |> ImmutableHashMap.unsafeGetByNull(shaderName);
 
   let setShaderCacheMap = (shaderName, shaderCacheMap, state) =>
     getUniformCacheMap(state)
@@ -260,19 +264,19 @@ let _compileShader = (gl, glslSource: string, shader) => {
   Gl.shaderSource(shader, glslSource, gl);
   Gl.compileShader(shader, gl);
 
-  Debug.getIsDebug(Data.getStateData()) ?
-    Gl.getShaderParameter(shader, Gl.getCompileStatus(gl), gl) === false ?
-      {
-        let message = Gl.getShaderInfoLog(shader, gl);
+  Debug.getIsDebug(Data.getStateData())
+    ? Gl.getShaderParameter(shader, Gl.getCompileStatus(gl), gl) === false
+        ? {
+          let message = Gl.getShaderInfoLog(shader, gl);
 
-        Error.raiseError(
-          {j|shader info log: $message
+          ErrorUtils.raiseError(
+            {j|shader info log: $message
         glsl source: $glslSource
         |j},
-        );
-      } :
-      () :
-    ();
+          );
+        }
+        : ()
+    : ();
 
   shader;
 };
@@ -280,15 +284,15 @@ let _compileShader = (gl, glslSource: string, shader) => {
 let _linkProgram = (program, gl) => {
   Gl.linkProgram(program, gl);
 
-  Debug.getIsDebug(Data.getStateData()) ?
-    Gl.getProgramParameter(program, Gl.getLinkStatus(gl), gl) === false ?
-      {
-        let message = Gl.getProgramInfoLog(program, gl);
+  Debug.getIsDebug(Data.getStateData())
+    ? Gl.getProgramParameter(program, Gl.getLinkStatus(gl), gl) === false
+        ? {
+          let message = Gl.getProgramInfoLog(program, gl);
 
-        Error.raiseError({j|link program raiseError: $message|j});
-      } :
-      () :
-    ();
+          ErrorUtils.raiseError({j|link program raiseError: $message|j});
+        }
+        : ()
+    : ();
 };
 
 let _initShader = (vsSource: string, fsSource: string, gl, program) => {
@@ -374,7 +378,7 @@ let _changeGLSLDataListToInitShaderDataList = glslDataList =>
      );
 
 let init = (state: DataType.state): Result.t(DataType.state, Js.Exn.t) => {
-  let gl = DeviceManager.unsafeGetGl(state);
+  let gl = DeviceManager.unsafeGetGlByThrow(state);
 
   GLSL.getAllValidGLSLEntryList(state)
   |> _changeGLSLDataListToInitShaderDataList
