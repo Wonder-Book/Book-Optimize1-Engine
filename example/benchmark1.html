@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>use engine</title>
+</head>
+
+<body>
+    <canvas id="webgl" width="400" height="400">
+        Please use a browser that supports "canvas"
+    </canvas>
+
+    <script src="./wd_old.js"></script>
+
+    <script>
+        function _getRandom(num) {
+            return Math.floor(Math.random() * num);
+        }
+
+        function _getRandomPosition(num) {
+            return [
+                _getRandom(num) - num / 2,
+                _getRandom(num) - num / 2,
+                _getRandom(num) - num / 2,
+            ]
+        }
+
+
+
+        //准备canvas的id
+        var canvasId = "webgl";
+
+        //调用API
+        wd.Canvas.setCanvasById(canvasId);
+
+
+        //准备清空颜色缓冲时的颜色值
+        var clearColor = [0.0, 0.0, 0.0, 1.0];
+
+        wd.Graphics.setClearColor(clearColor);
+
+
+        //准备两组GLSL
+        var vs1 = `
+precision mediump float;
+attribute vec3 a_position;
+uniform mat4 u_pMatrix;
+uniform mat4 u_vMatrix;
+uniform mat4 u_mMatrix;
+
+void main() {
+gl_Position = u_pMatrix * u_vMatrix * u_mMatrix * vec4(a_position, 1.0);
+}
+`;
+        var fs1 = `
+precision mediump float;
+
+uniform vec3 u_color0;
+
+void main(){
+gl_FragColor = vec4(u_color0, 1.0);
+}
+`;
+        var vs2 = `
+precision mediump float;
+attribute vec3 a_position;
+uniform mat4 u_pMatrix;
+uniform mat4 u_vMatrix;
+uniform mat4 u_mMatrix;
+
+void main() {
+gl_Position = u_pMatrix * u_vMatrix * u_mMatrix * vec4(a_position, 1.0);
+}
+`;
+        var fs2 = `
+precision mediump float;
+
+uniform vec3 u_color0;
+uniform vec3 u_color1;
+
+void main(){
+gl_FragColor = vec4(u_color0 * u_color1, 1.0);
+}
+`;
+        //准备两个Shader的名称
+        var shaderName1 = "shader1";
+        var shaderName2 = "shader2";
+
+        wd.Shader.addGLSL(shaderName1, [vs1, fs1]);
+        wd.Shader.addGLSL(shaderName2, [vs2, fs2]);
+
+
+        //调用API，准备三个三角形的顶点数据
+        var [vertices1, indices1] = wd.Scene.createTriangleVertexData();
+        var [vertices2, indices2] = wd.Scene.createTriangleVertexData();
+        var [vertices3, indices3] = wd.Scene.createTriangleVertexData();
+        //准备三个三角形的位置数据
+        var [position1, position2, position3] = [
+            [0.75, 0.0, 0.0],
+            [-0.0, 0.0, 0.5],
+            [-0.5, 0.0, -2.0]
+        ];
+        //准备三个三角形的颜色数据
+        var [colors1, colors2, colors3] = [
+            [[1.0, 0.0, 0.0]],
+            [[0.0, 0.8, 0.0], [0.0, 0.5, 0.0]],
+            [[0.0, 0.0, 1.0]]
+        ];
+
+
+        for (let i = 0; i < 3500; i++) {
+            state = wd.Scene.addTriangle(
+                _getRandomPosition(50),
+                wd.Scene.createTriangleVertexData(),
+                [shaderName1, colors1]
+            );
+        }
+
+
+        for (let i = 0; i < 3500; i++) {
+            state = wd.Scene.addTriangle(
+                _getRandomPosition(50),
+                wd.Scene.createTriangleVertexData(),
+                [shaderName2, colors2]
+            );
+        }
+
+
+        //准备相机数据
+        var [eye, center, up] = [
+            [0.0, 0.0, 200.0],
+            [0.0, 0.0, -100.0],
+            [0.0, 1.0, 0.0]
+        ];
+        var canvas = document.querySelector("#webgl");
+        var [near, far, fovy, aspect] = [
+            1.0,
+            1000.0,
+            30.0,
+            canvas.width / canvas.height
+        ];
+
+        wd.Scene.setCamera([eye, center, up], [near, far, fovy, aspect]);
+
+
+        //准备webgl上下文的配置项
+        var contextConfig = {
+            "alpha": true,
+            "depth": true,
+            "stencil": false,
+            "antialias": true,
+            "premultipliedAlpha": true,
+            "preserveDrawingBuffer": false,
+        };
+
+
+        console.profile("init");
+
+        var n1 = performance.now();
+
+        wd.Director.init(contextConfig);
+
+        var n2 = performance.now();
+
+        console.profileEnd();
+
+        console.log("init time(ms):", n2 - n1);
+
+        wd.Director.start();
+    </script>
+</body>
+
+</html>
